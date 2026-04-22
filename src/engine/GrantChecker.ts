@@ -31,6 +31,11 @@ export function checkGrant(toolName: string, access: ToolAccess, context: Conver
 
     const latestMessage = context.messages[context.messages.length - 1];
     const senderId = latestMessage.from;
+
+    if (!context.participants[senderId]) {
+        return { granted: false, reason: "unknown_participant" };
+    }
+
     const senderVerification = getEffectiveVerification(senderId, context);
     const allowedModes = ALLOWED_ACCESS_BY_VERIFICATION[senderVerification];
 

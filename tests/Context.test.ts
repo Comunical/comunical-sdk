@@ -156,3 +156,73 @@ describe("BoundContext.execute — end-to-end", () => {
         expect(result.reason).toBe("insufficient_identity_verification");
     });
 });
+
+describe("BoundContext.execute — audit logging", () => {
+    it("logs a successful tool execution", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "group",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "bill@counterparty.com": { role: "human", trust: "external" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        await context.execute("calendar", async () => calendarData, {});
+
+        const entries = context.getAuditLog();
+        expect(entries).toHaveLength(1);
+        expect(entries[0].tool).toBe("calendar");
+        expect(entries[0].status).toBe("ok");
+        expect(entries[0].access).toBe("owner_only");
+        expect(entries[0].disclosure_level).toBe("free_busy_only");
+        expect(entries[0].participant_count).toBe(2);
+    });
+
+    it("logs a denied tool execution", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "group",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "bill@counterparty.com": { role: "human", trust: "external" }
+            },
+            messages: [
+                { from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
+            ]
+        });
+
+        await context.execute("calendar", async () => calendarData, {});
+
+        const entries = context.getAuditLog();
+        expect(entries).toHaveLength(1);
+        expect(entries[0].status).toBe("denied");
+        expect(entries[0].disclosure_level).toBe("none");
+    });
+
+    it("logs multiple executions", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["alex@agent"], body: "Search and check calendar", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        await context.execute("search", async () => ({ results: [] }), {});
+        await context.execute("calendar", async () => calendarData, {});
+
+        const entries = context.getAuditLog();
+        expect(entries).toHaveLength(2);
+        expect(entries[0].tool).toBe("search");
+        expect(entries[1].tool).toBe("calendar");
+    });
+});

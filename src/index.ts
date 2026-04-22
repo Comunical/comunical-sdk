@@ -46,3 +46,5 @@ export {
 } from "./Types";
 
 export { ComunicalError, GrantDeniedError, NoMatchingRuleError, TransformationError, InvalidConfigError } from "./Errors";
+
+export type { AuditEntry } from "./audit/Logger";

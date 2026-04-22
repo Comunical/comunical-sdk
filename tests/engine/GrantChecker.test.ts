@@ -154,4 +154,38 @@ describe("GrantChecker", () => {
             expect(result.granted).toBe(false);
         });
     });
+
+    describe("unknown participant", () => {
+        it("denies gated tools when sender is not in participants", () => {
+            const ctx = makeContext({
+                messages: [
+                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
+                ]
+            });
+            const result = checkGrant("calendar", "owner_only", ctx);
+            expect(result.granted).toBe(false);
+            expect(result.reason).toBe("unknown_participant");
+        });
+
+        it("denies explicit tools when sender is not in participants", () => {
+            const ctx = makeContext({
+                messages: [
+                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Yes, go ahead", timestamp: "2026-04-21T15:00:00Z" }
+                ]
+            });
+            const result = checkGrant("email", "explicit", ctx);
+            expect(result.granted).toBe(false);
+            expect(result.reason).toBe("unknown_participant");
+        });
+
+        it("still allows open tools when sender is unknown", () => {
+            const ctx = makeContext({
+                messages: [
+                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T15:00:00Z" }
+                ]
+            });
+            const result = checkGrant("search", "open", ctx);
+            expect(result.granted).toBe(true);
+        });
+    });
 });

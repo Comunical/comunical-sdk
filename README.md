@@ -1,4 +1,4 @@
-# @comunical/sdk
+# @comunical/guard
 
 Middleware for AI agent tool execution — context-aware trust boundaries in multi-party interactions.
 
@@ -9,13 +9,13 @@ When an AI agent operates in a group context — a shared channel, a multi-party
 ## Install
 
 ```bash
-npm install @comunical/sdk
+npm install @comunical/guard
 ```
 
 ## Quick Start
 
 ```typescript
-import { comunical } from "@comunical/sdk";
+import { comunical } from "@comunical/guard";
 
 // 1. Create a guard with tools and rules
 const guard = comunical.createGuard({

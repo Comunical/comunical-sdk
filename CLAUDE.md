@@ -1,12 +1,12 @@
-# Comunical SDK
+# Comunical Guard — JavaScript SDK
 
 ## What This Is
 
-Tier 1 (open-source, zero-knowledge) SDK for Comunical — a middleware layer for AI agent tool execution that enforces context-aware trust boundaries in multi-party interactions. Everything runs locally, no server.
+Open-source SDK for Comunical Guard — a middleware layer for AI agent tool execution that enforces context-aware trust boundaries in multi-party interactions. Everything runs locally, no server. Published as `@comunical/guard` on npm.
 
 ## Architecture
 
-See `../architecture-overview.md` for the full design document. Key concepts:
+Key concepts:
 
 - **Two-layer defense**: grants (should this tool execute?) + views (what data should the LLM see?)
 - **Single `access` field**: `"open" | "owner_only" | "explicit" | "implicit"` — no impossible states

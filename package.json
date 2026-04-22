@@ -1,5 +1,5 @@
 {
-  "name": "@comunical/sdk",
+  "name": "@comunical/guard",
   "version": "0.1.0",
   "description": "Middleware for AI agent tool execution — context-aware trust boundaries in multi-party interactions",
   "type": "module",

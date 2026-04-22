@@ -16,7 +16,28 @@ const AFFIRMATIVE_PATTERNS = [
     /\bdo it\b/i
 ];
 
+const NEGATION_PATTERNS = [
+    /\bno\b/i,
+    /\bnot\b/i,
+    /\bnope\b/i,
+    /\bdon'?t\b/i,
+    /\bdo not\b/i,
+    /\bnever\b/i,
+    /\bdeny\b/i,
+    /\bdenied\b/i,
+    /\brefuse[ds]?\b/i,
+    /\bdecline[ds]?\b/i,
+    /\babsolutely not\b/i
+];
+
+function hasNegation(body: string): boolean {
+    return NEGATION_PATTERNS.some(pattern => pattern.test(body));
+}
+
 function isAffirmative(body: string): boolean {
+    if (hasNegation(body)) {
+        return false;
+    }
     return AFFIRMATIVE_PATTERNS.some(pattern => pattern.test(body));
 }
 

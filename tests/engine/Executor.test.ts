@@ -127,4 +127,11 @@ describe("Executor — executePipeline", () => {
         await executePipeline("calendar", handler, {}, guardConfig, ctx);
         expect(handlerCalled).toBe(false);
     });
+
+    it("denies when tool is not registered in guard config", async () => {
+        const handler = async () => ({ data: "secret" });
+        const result = await executePipeline("unregistered_tool", handler, {}, guardConfig, makeContext());
+        expect(result.status).toBe("denied");
+        expect(result.reason).toContain("not registered");
+    });
 });

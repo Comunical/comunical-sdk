@@ -102,6 +102,34 @@ describe("GrantChecker", () => {
         });
     });
 
+    describe("implicit access", () => {
+        it("grants when the owner's message implies intent", () => {
+            const result = checkGrant("calendar", "implicit", makeContext());
+            expect(result.granted).toBe(true);
+        });
+
+        it("denies when the owner's message has no relevant intent", () => {
+            const ctx = makeContext({
+                messages: [
+                    { from: "jim@acme.com", to: ["alex@agent"], body: "What's the weather today?", timestamp: "2026-04-21T14:00:00Z" }
+                ]
+            });
+            const result = checkGrant("calendar", "implicit", ctx);
+            expect(result.granted).toBe(false);
+            expect(result.reason).toBe("no_implicit_intent_detected");
+        });
+
+        it("denies when a non-owner implies intent", () => {
+            const ctx = makeContext({
+                messages: [
+                    { from: "bill@counterparty.com", to: ["alex@agent"], body: "Schedule a meeting with Jim", timestamp: "2026-04-21T14:00:00Z" }
+                ]
+            });
+            const result = checkGrant("calendar", "implicit", ctx);
+            expect(result.granted).toBe(false);
+        });
+    });
+
     describe("identity verification enforcement", () => {
         it("denies gated tools when participant is unverified", () => {
             const ctx = makeContext({ identity_verification: "unverified" });

@@ -1,6 +1,7 @@
 import type { ToolAccess, ConversationContext, IdentityVerification } from "../Types";
 import { isGrantorPresent } from "../grants/Revocation";
 import { detectExplicitGrant } from "../grants/ExplicitDetector";
+import { detectImplicitGrant } from "../grants/ImplicitDetector";
 
 export interface GrantCheckResult {
     granted: boolean;
@@ -66,8 +67,10 @@ export function checkGrant(toolName: string, access: ToolAccess, context: Conver
     }
 
     if (access === "implicit") {
-        void toolName;
-        return { granted: false, reason: "implicit_grant_not_implemented" };
+        if (detectImplicitGrant(context.messages, toolName, context.participants)) {
+            return { granted: true };
+        }
+        return { granted: false, reason: "no_implicit_intent_detected" };
     }
 
     return { granted: false, reason: `Unknown access mode: ${access}` };

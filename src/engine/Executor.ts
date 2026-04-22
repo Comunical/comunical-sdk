@@ -33,8 +33,18 @@ export async function executePipeline(
     guardConfig: GuardConfig,
     context: ConversationContext
 ): Promise<PipelineResult> {
-    const access = resolveToolAccess(toolName, guardConfig);
     const participantCount = Object.keys(context.participants).length;
+
+    if (!(toolName in guardConfig.tools)) {
+        const reason = `Tool "${toolName}" is not registered in guard config`;
+        return {
+            status: "denied",
+            reason,
+            audit: buildAuditEntry(toolName, "unknown", "denied", "none", participantCount, reason)
+        };
+    }
+
+    const access = resolveToolAccess(toolName, guardConfig);
 
     const grantResult = checkGrant(toolName, access, context);
     if (!grantResult.granted) {

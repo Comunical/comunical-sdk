@@ -1,6 +1,7 @@
 import { ConversationContextSchema } from "./Types";
 import type { GuardConfig, ConversationContext, ExecuteResult, ToolHandler } from "./Types";
 import { InvalidConfigError } from "./Errors";
+import { executePipeline } from "./engine/Executor";
 
 export class BoundContext {
     public readonly context: ConversationContext;
@@ -16,8 +17,7 @@ export class BoundContext {
         this.context = parseResult.data;
     }
 
-    async execute(_toolName: string, _handler: ToolHandler, _params: Record<string, unknown>): Promise<ExecuteResult> {
-        void this.guardConfig;
-        throw new Error("not implemented");
+    async execute(toolName: string, handler: ToolHandler, params: Record<string, unknown>): Promise<ExecuteResult> {
+        return executePipeline(toolName, handler, params, this.guardConfig, this.context);
     }
 }

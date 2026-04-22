@@ -1,9 +1,28 @@
 import type { PolicyRule, Participant, TrustTier } from "../Types";
 
-export function resolveDisclosureLevel(_rule: PolicyRule, _participants: Record<string, Participant>): string {
-    throw new Error("not implemented");
+const TRUST_TIER_RANK: Record<TrustTier, number> = {
+    owner: 3,
+    verified: 2,
+    guest: 1,
+    external: 0
+};
+
+export function getLowestTrustTier(participants: Record<string, Participant>): TrustTier {
+    let lowest: TrustTier = "owner";
+    let lowestRank = TRUST_TIER_RANK.owner;
+
+    for (const participant of Object.values(participants)) {
+        const rank = TRUST_TIER_RANK[participant.trust];
+        if (rank < lowestRank) {
+            lowestRank = rank;
+            lowest = participant.trust;
+        }
+    }
+
+    return lowest;
 }
 
-export function getLowestTrustTier(_participants: Record<string, Participant>): TrustTier {
-    throw new Error("not implemented");
+export function resolveDisclosureLevel(rule: PolicyRule, participants: Record<string, Participant>): string {
+    const lowestTier = getLowestTrustTier(participants);
+    return rule.disclosure[lowestTier] ?? "none";
 }

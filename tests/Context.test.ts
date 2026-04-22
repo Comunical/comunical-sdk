@@ -1,0 +1,158 @@
+import { describe, it, expect } from "vitest";
+import { createGuard } from "../src/Guard";
+import type { GuardConfig } from "../src/Types";
+
+const calendarData = {
+    items: [
+        { start: "10:00", end: "11:00", title: "Board Meeting", status: "confirmed" },
+        { start: "14:00", end: "15:00", title: "1:1 with Legal", status: "confirmed" }
+    ]
+};
+
+const guardConfig: GuardConfig = {
+    default_access: "owner_only",
+    tools: {
+        search: { access: "open" },
+        calendar: {},
+        email: { access: "explicit" }
+    },
+    policies: {
+        rules: [
+            {
+                name: "Calendar",
+                match: 'tool = "calendar"',
+                disclosure: { owner: "full", verified: "free_busy_only", guest: "free_busy_only", external: "free_busy_only" },
+                disclosure_levels: {
+                    free_busy_only: { transform: 'items.{ "start": start, "end": end, "title": "Busy" }' },
+                    full: { transform: "$$" }
+                }
+            },
+            {
+                name: "Search",
+                match: 'tool = "search"',
+                disclosure: { owner: "full", verified: "full", guest: "full", external: "full" },
+                disclosure_levels: { full: { transform: "$$" } }
+            }
+        ]
+    }
+};
+
+describe("BoundContext.execute — end-to-end", () => {
+    it("full pipeline: owner sends message, calendar tool transforms to free_busy for external participant", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "group",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "bill@counterparty.com": { role: "human", trust: "external" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("calendar", async () => calendarData, {});
+
+        expect(result.status).toBe("ok");
+        expect(result.data).toEqual([
+            { start: "10:00", end: "11:00", title: "Busy" },
+            { start: "14:00", end: "15:00", title: "Busy" }
+        ]);
+    });
+
+    it("full pipeline: owner-only context returns full calendar data", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "direct",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "alex@agent": { role: "agent", trust: "owner" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["alex@agent"], body: "What's on my calendar?", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("calendar", async () => calendarData, {});
+
+        expect(result.status).toBe("ok");
+        expect(result.data).toEqual(calendarData);
+    });
+
+    it("denies when non-owner tries to access owner_only tool", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "group",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "bill@counterparty.com": { role: "human", trust: "external" }
+            },
+            messages: [
+                { from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("calendar", async () => calendarData, {});
+
+        expect(result.status).toBe("denied");
+        expect(result.data).toBeUndefined();
+    });
+
+    it("returns permission_required for explicit tool without grant", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            context_type: "group",
+            identity_verification: "verified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" },
+                "bill@counterparty.com": { role: "human", trust: "external" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Check my email", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("email", async () => ({}), {});
+
+        expect(result.status).toBe("permission_required");
+    });
+
+    it("open tool executes freely even with unverified identity", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            identity_verification: "unverified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("search", async () => ({ results: ["a", "b"] }), {});
+
+        expect(result.status).toBe("ok");
+        expect(result.data).toEqual({ results: ["a", "b"] });
+    });
+
+    it("denies gated tool with unverified identity", async () => {
+        const guard = createGuard(guardConfig);
+        const context = guard.withContext({
+            identity_verification: "unverified",
+            participants: {
+                "jim@acme.com": { role: "human", trust: "owner" }
+            },
+            messages: [
+                { from: "jim@acme.com", to: ["alex@agent"], body: "Check my calendar", timestamp: "2026-04-21T14:00:00Z" }
+            ]
+        });
+
+        const result = await context.execute("calendar", async () => calendarData, {});
+
+        expect(result.status).toBe("denied");
+        expect(result.reason).toBe("insufficient_identity_verification");
+    });
+});

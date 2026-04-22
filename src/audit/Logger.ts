@@ -9,5 +9,14 @@ export interface AuditEntry {
 }
 
 export function createAuditLogger(): { log: (entry: AuditEntry) => void; getEntries: () => AuditEntry[] } {
-    throw new Error("not implemented");
+    const entries: AuditEntry[] = [];
+
+    return {
+        log(entry: AuditEntry): void {
+            entries.push(entry);
+        },
+        getEntries(): AuditEntry[] {
+            return [...entries];
+        }
+    };
 }

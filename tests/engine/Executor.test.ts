@@ -46,9 +46,7 @@ function makeContext(overrides: Partial<ConversationContext> = {}): Conversation
             "jim@acme.com": { role: "human", trust: "owner" },
             "bill@counterparty.com": { role: "human", trust: "external" }
         },
-        messages: [
-            { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }
-        ],
+        messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }],
         ...overrides
     };
 }

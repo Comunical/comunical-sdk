@@ -73,9 +73,7 @@ describe("createGuard", () => {
             participants: {
                 "jim@acme.com": { role: "human", trust: "owner" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["alex@agent"], body: "Hello", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Hello", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         expect(context.context.context_type).toBe("group");
@@ -93,9 +91,7 @@ describe("createGuard", () => {
                 participants: {
                     "jim@acme.com": { trust: "owner" }
                 },
-                messages: [
-                    { from: "jim@acme.com", to: ["alex@agent"], body: "Hello", timestamp: "2026-04-21T14:00:00Z" }
-                ]
+                messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Hello", timestamp: "2026-04-21T14:00:00Z" }]
             })
         ).toThrow(InvalidConfigError);
     });

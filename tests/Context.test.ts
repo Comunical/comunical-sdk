@@ -47,9 +47,7 @@ describe("BoundContext.execute — end-to-end", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "bill@counterparty.com": { role: "human", trust: "external" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         const result = await context.execute("calendar", async () => calendarData, {});
@@ -70,9 +68,7 @@ describe("BoundContext.execute — end-to-end", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "alex@agent": { role: "agent", trust: "owner" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["alex@agent"], body: "What's on my calendar?", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "What's on my calendar?", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         const result = await context.execute("calendar", async () => calendarData, {});
@@ -90,9 +86,7 @@ describe("BoundContext.execute — end-to-end", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "bill@counterparty.com": { role: "human", trust: "external" }
             },
-            messages: [
-                { from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
-            ]
+            messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
 
         const result = await context.execute("calendar", async () => calendarData, {});
@@ -110,9 +104,7 @@ describe("BoundContext.execute — end-to-end", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "bill@counterparty.com": { role: "human", trust: "external" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Check my email", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Check my email", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         const result = await context.execute("email", async () => ({}), {});
@@ -127,9 +119,7 @@ describe("BoundContext.execute — end-to-end", () => {
             participants: {
                 "jim@acme.com": { role: "human", trust: "owner" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         const result = await context.execute("search", async () => ({ results: ["a", "b"] }), {});
@@ -145,9 +135,7 @@ describe("BoundContext.execute — end-to-end", () => {
             participants: {
                 "jim@acme.com": { role: "human", trust: "owner" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["alex@agent"], body: "Check my calendar", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Check my calendar", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         const result = await context.execute("calendar", async () => calendarData, {});
@@ -167,9 +155,7 @@ describe("BoundContext.execute — audit logging", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "bill@counterparty.com": { role: "human", trust: "external" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         await context.execute("calendar", async () => calendarData, {});
@@ -192,9 +178,7 @@ describe("BoundContext.execute — audit logging", () => {
                 "jim@acme.com": { role: "human", trust: "owner" },
                 "bill@counterparty.com": { role: "human", trust: "external" }
             },
-            messages: [
-                { from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
-            ]
+            messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
 
         await context.execute("calendar", async () => calendarData, {});
@@ -212,9 +196,7 @@ describe("BoundContext.execute — audit logging", () => {
             participants: {
                 "jim@acme.com": { role: "human", trust: "owner" }
             },
-            messages: [
-                { from: "jim@acme.com", to: ["alex@agent"], body: "Search and check calendar", timestamp: "2026-04-21T14:00:00Z" }
-            ]
+            messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Search and check calendar", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
         await context.execute("search", async () => ({ results: [] }), {});

@@ -48,7 +48,7 @@ export async function executePipeline(
 
     const grantResult = checkGrant(toolName, access, context);
     if (!grantResult.granted) {
-        const status = grantResult.reason === "permission_required" ? "permission_required" as const : "denied" as const;
+        const status = grantResult.reason === "permission_required" ? ("permission_required" as const) : ("denied" as const);
         return {
             status,
             reason: grantResult.reason,

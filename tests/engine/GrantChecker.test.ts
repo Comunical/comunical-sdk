@@ -43,9 +43,7 @@ describe("GrantChecker", () => {
 
         it("denies when the latest message is from a non-owner", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
-                ]
+                messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
             });
             const result = checkGrant("calendar", "owner_only", ctx);
             expect(result.granted).toBe(false);
@@ -58,9 +56,7 @@ describe("GrantChecker", () => {
                     "alex@agent": { role: "agent", trust: "owner" },
                     "bill@counterparty.com": { role: "human", trust: "external" }
                 },
-                messages: [
-                    { from: "alex@agent", to: ["jim@acme.com"], body: "I'll check your calendar", timestamp: "2026-04-21T15:00:00Z" }
-                ]
+                messages: [{ from: "alex@agent", to: ["jim@acme.com"], body: "I'll check your calendar", timestamp: "2026-04-21T15:00:00Z" }]
             });
             const result = checkGrant("calendar", "owner_only", ctx);
             expect(result.granted).toBe(false);
@@ -77,7 +73,12 @@ describe("GrantChecker", () => {
         it("grants when the owner explicitly approves in conversation", () => {
             const ctx = makeContext({
                 messages: [
-                    { from: "alex@agent", to: ["jim@acme.com", "bill@counterparty.com"], body: "I need access to your calendar. Can you confirm?", timestamp: "2026-04-21T14:00:00Z" },
+                    {
+                        from: "alex@agent",
+                        to: ["jim@acme.com", "bill@counterparty.com"],
+                        body: "I need access to your calendar. Can you confirm?",
+                        timestamp: "2026-04-21T14:00:00Z"
+                    },
                     { from: "jim@acme.com", to: ["alex@agent", "bill@counterparty.com"], body: "Yes, go ahead", timestamp: "2026-04-21T14:01:00Z" }
                 ]
             });
@@ -110,9 +111,7 @@ describe("GrantChecker", () => {
 
         it("denies when the owner's message has no relevant intent", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "jim@acme.com", to: ["alex@agent"], body: "What's the weather today?", timestamp: "2026-04-21T14:00:00Z" }
-                ]
+                messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "What's the weather today?", timestamp: "2026-04-21T14:00:00Z" }]
             });
             const result = checkGrant("calendar", "implicit", ctx);
             expect(result.granted).toBe(false);
@@ -121,9 +120,7 @@ describe("GrantChecker", () => {
 
         it("denies when a non-owner implies intent", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "bill@counterparty.com", to: ["alex@agent"], body: "Schedule a meeting with Jim", timestamp: "2026-04-21T14:00:00Z" }
-                ]
+                messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Schedule a meeting with Jim", timestamp: "2026-04-21T14:00:00Z" }]
             });
             const result = checkGrant("calendar", "implicit", ctx);
             expect(result.granted).toBe(false);
@@ -186,9 +183,7 @@ describe("GrantChecker", () => {
     describe("unknown participant", () => {
         it("denies gated tools when sender is not in participants", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }
-                ]
+                messages: [{ from: "unknown@hacker.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
             });
             const result = checkGrant("calendar", "owner_only", ctx);
             expect(result.granted).toBe(false);
@@ -197,9 +192,7 @@ describe("GrantChecker", () => {
 
         it("denies explicit tools when sender is not in participants", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Yes, go ahead", timestamp: "2026-04-21T15:00:00Z" }
-                ]
+                messages: [{ from: "unknown@hacker.com", to: ["alex@agent"], body: "Yes, go ahead", timestamp: "2026-04-21T15:00:00Z" }]
             });
             const result = checkGrant("email", "explicit", ctx);
             expect(result.granted).toBe(false);
@@ -208,9 +201,7 @@ describe("GrantChecker", () => {
 
         it("still allows open tools when sender is unknown", () => {
             const ctx = makeContext({
-                messages: [
-                    { from: "unknown@hacker.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T15:00:00Z" }
-                ]
+                messages: [{ from: "unknown@hacker.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T15:00:00Z" }]
             });
             const result = checkGrant("search", "open", ctx);
             expect(result.granted).toBe(true);

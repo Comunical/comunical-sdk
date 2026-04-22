@@ -7,8 +7,10 @@ export function compileMatchSugar(matchObject: Record<string, string>): string {
         throw new InvalidConfigError("Match object must have at least one key-value pair");
     }
 
-    return entries.map(([key, value]) => {
-        const escapedValue = value.replace(/"/g, '\\"');
-        return `${key} = "${escapedValue}"`;
-    }).join(" and ");
+    return entries
+        .map(([key, value]) => {
+            const escapedValue = value.replace(/"/g, '\\"');
+            return `${key} = "${escapedValue}"`;
+        })
+        .join(" and ");
 }

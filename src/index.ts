@@ -9,6 +9,7 @@ export const comunical = {
 export { createGuard } from "./Guard";
 export type { Guard } from "./Guard";
 export { BoundContext } from "./Context";
+export { compileView } from "./views/ViewCompiler";
 
 export type {
     TrustTier,
@@ -20,8 +21,10 @@ export type {
     ToolConfig,
     Participant,
     MessageEnvelope,
-    DisclosureLevelConfig,
-    PolicyRule,
+    DeclarativeView,
+    ViewDefinition,
+    Alias,
+    RuleConfig,
     GuardConfig,
     ConversationContext,
     ExecuteResult,
@@ -38,8 +41,10 @@ export {
     ToolConfigSchema,
     ParticipantSchema,
     MessageEnvelopeSchema,
-    DisclosureLevelConfigSchema,
-    PolicyRuleSchema,
+    DeclarativeViewSchema,
+    ViewDefinitionSchema,
+    AliasSchema,
+    RuleConfigSchema,
     GuardConfigSchema,
     ConversationContextSchema,
     ExecuteResultSchema

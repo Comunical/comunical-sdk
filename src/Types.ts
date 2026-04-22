@@ -43,25 +43,38 @@ export const MessageEnvelopeSchema = z.object({
 });
 export type MessageEnvelope = z.infer<typeof MessageEnvelopeSchema>;
 
-export const DisclosureLevelConfigSchema = z.object({
-    transform: z.string().min(1)
-});
-export type DisclosureLevelConfig = z.infer<typeof DisclosureLevelConfigSchema>;
+// --- Rules: ACL + Views ---
 
-export const PolicyRuleSchema = z.object({
-    name: z.string().min(1),
-    match: z.union([z.string().min(1), z.record(z.string(), z.string())]),
-    disclosure: z.record(TrustTierSchema, z.string()),
-    disclosure_levels: z.record(z.string(), DisclosureLevelConfigSchema).optional()
+export const DeclarativeViewSchema = z.object({
+    include: z.array(z.string().min(1)).optional(),
+    replace: z.record(z.string(), z.string()).optional(),
+    compute: z.record(z.string(), z.string()).optional(),
+    transform: z.string().min(1).optional()
 });
-export type PolicyRule = z.infer<typeof PolicyRuleSchema>;
+export type DeclarativeView = z.infer<typeof DeclarativeViewSchema>;
+
+export const ViewDefinitionSchema = z.union([z.literal("*"), z.literal("deny"), DeclarativeViewSchema]);
+export type ViewDefinition = z.infer<typeof ViewDefinitionSchema>;
+
+export const AliasSchema = z.object({
+    tool: z.string().min(1),
+    provider: z.string().min(1)
+});
+export type Alias = z.infer<typeof AliasSchema>;
+
+export const RuleConfigSchema = z.object({
+    aliases: z.array(AliasSchema).optional(),
+    acl: z.record(TrustTierSchema, z.string()),
+    views: z.record(z.string(), ViewDefinitionSchema)
+});
+export type RuleConfig = z.infer<typeof RuleConfigSchema>;
+
+// --- Guard config ---
 
 export const GuardConfigSchema = z.object({
     default_access: ToolAccessSchema.default("owner_only"),
     tools: z.record(z.string(), ToolConfigSchema),
-    policies: z.object({
-        rules: z.array(PolicyRuleSchema)
-    })
+    rules: z.record(z.string(), RuleConfigSchema)
 });
 export type GuardConfig = z.infer<typeof GuardConfigSchema>;
 

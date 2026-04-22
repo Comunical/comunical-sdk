@@ -9,14 +9,11 @@ describe("createGuard", () => {
                 search: { access: "open" },
                 calendar: {}
             },
-            policies: {
-                rules: [
-                    {
-                        name: "Calendar",
-                        match: 'tool = "calendar"',
-                        disclosure: { owner: "full", verified: "full", guest: "full", external: "full" }
-                    }
-                ]
+            rules: {
+                calendar: {
+                    acl: { owner: "full", verified: "full", guest: "full", external: "full" },
+                    views: { full: "*" }
+                }
             }
         });
 
@@ -28,7 +25,7 @@ describe("createGuard", () => {
     it("applies default_access when not specified", () => {
         const guard = createGuard({
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
         expect(guard.config.default_access).toBe("owner_only");
     });
@@ -37,20 +34,20 @@ describe("createGuard", () => {
         const guard = createGuard({
             default_access: "explicit",
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
         expect(guard.config.default_access).toBe("explicit");
     });
 
     it("throws InvalidConfigError for missing tools", () => {
-        expect(() => createGuard({ policies: { rules: [] } })).toThrow(InvalidConfigError);
+        expect(() => createGuard({ rules: {} })).toThrow(InvalidConfigError);
     });
 
     it("throws InvalidConfigError for invalid access mode", () => {
         expect(() =>
             createGuard({
                 tools: { calendar: { access: "invalid_mode" } },
-                policies: { rules: [] }
+                rules: {}
             })
         ).toThrow(InvalidConfigError);
     });
@@ -58,7 +55,7 @@ describe("createGuard", () => {
     it("returns a guard with withContext method", () => {
         const guard = createGuard({
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
         expect(typeof guard.withContext).toBe("function");
     });
@@ -66,7 +63,7 @@ describe("createGuard", () => {
     it("withContext creates a BoundContext with validated context", () => {
         const guard = createGuard({
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
 
         const context = guard.withContext({
@@ -83,7 +80,7 @@ describe("createGuard", () => {
     it("withContext throws for invalid participant (missing role)", () => {
         const guard = createGuard({
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
 
         expect(() =>
@@ -99,7 +96,7 @@ describe("createGuard", () => {
     it("withContext throws for missing messages", () => {
         const guard = createGuard({
             tools: { calendar: {} },
-            policies: { rules: [] }
+            rules: {}
         });
 
         expect(() =>

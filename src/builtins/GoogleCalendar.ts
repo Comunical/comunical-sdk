@@ -1,26 +1,30 @@
-import type { PolicyRule } from "../Types";
+import type { RuleConfig } from "../Types";
 
-export const googleCalendar: PolicyRule = {
-    name: "Google Calendar",
-    match: 'tool = "calendar" or (tool = "execute_tool" and params.provider = "google_calendar")',
-    disclosure: {
+export const googleCalendar: RuleConfig = {
+    aliases: [{ tool: "execute_tool", provider: "google_calendar" }],
+
+    acl: {
         owner: "full",
-        verified: "free_busy_only",
-        guest: "free_busy_only",
-        external: "free_busy_only"
+        verified: "free_busy",
+        guest: "free_busy",
+        external: "free_busy"
     },
-    disclosure_levels: {
-        free_busy_only: {
-            transform: 'items.{ "start": start, "end": end, "status": status, "title": "Busy" }'
+
+    views: {
+        full: "*",
+
+        free_busy: {
+            include: ["items.start", "items.end", "items.status"],
+            replace: { "items.title": "Busy" }
         },
-        metadata_only: {
-            transform: 'items.{ "start": start, "end": end, "status": status, "attendee_count": $count(attendees) }'
+
+        metadata: {
+            include: ["items.start", "items.end", "items.status"],
+            compute: { "items.attendee_count": "count(items.attendees)" }
         },
-        summary_only: {
+
+        summary: {
             transform: '{ "total_events": $count(items), "busy_hours": $sum(items.(($toMillis(end.dateTime) - $toMillis(start.dateTime)) / 3600000)) }'
-        },
-        full: {
-            transform: "$$"
         }
     }
 };

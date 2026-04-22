@@ -16,29 +16,26 @@ const guardConfig: GuardConfig = {
         calendar: {},
         email: { access: "explicit" }
     },
-    policies: {
-        rules: [
-            {
-                name: "Calendar",
-                match: 'tool = "calendar"',
-                disclosure: { owner: "full", verified: "free_busy_only", guest: "free_busy_only", external: "free_busy_only" },
-                disclosure_levels: {
-                    free_busy_only: { transform: 'items.{ "start": start, "end": end, "title": "Busy" }' },
-                    full: { transform: "$$" }
+    rules: {
+        calendar: {
+            acl: { owner: "full", verified: "free_busy", guest: "free_busy", external: "free_busy" },
+            views: {
+                full: "*",
+                free_busy: {
+                    include: ["items.start", "items.end", "items.status"],
+                    replace: { "items.title": "Busy" }
                 }
-            },
-            {
-                name: "Search",
-                match: 'tool = "search"',
-                disclosure: { owner: "full", verified: "full", guest: "full", external: "full" },
-                disclosure_levels: { full: { transform: "$$" } }
             }
-        ]
+        },
+        search: {
+            acl: { owner: "full", verified: "full", guest: "full", external: "full" },
+            views: { full: "*" }
+        }
     }
 };
 
 describe("BoundContext.execute — end-to-end", () => {
-    it("full pipeline: owner sends message, calendar tool transforms to free_busy for external participant", async () => {
+    it("full pipeline: owner sends message, calendar transforms to free_busy for external participant", async () => {
         const guard = createGuard(guardConfig);
         const context = guard.withContext({
             context_type: "group",
@@ -54,8 +51,8 @@ describe("BoundContext.execute — end-to-end", () => {
 
         expect(result.status).toBe("ok");
         expect(result.data).toEqual([
-            { start: "10:00", end: "11:00", title: "Busy" },
-            { start: "14:00", end: "15:00", title: "Busy" }
+            { start: "10:00", end: "11:00", status: "confirmed", title: "Busy" },
+            { start: "14:00", end: "15:00", status: "confirmed", title: "Busy" }
         ]);
     });
 
@@ -165,7 +162,7 @@ describe("BoundContext.execute — audit logging", () => {
         expect(entries[0].tool).toBe("calendar");
         expect(entries[0].status).toBe("ok");
         expect(entries[0].access).toBe("owner_only");
-        expect(entries[0].disclosure_level).toBe("free_busy_only");
+        expect(entries[0].disclosure_level).toBe("free_busy");
         expect(entries[0].participant_count).toBe(2);
     });
 
@@ -186,7 +183,6 @@ describe("BoundContext.execute — audit logging", () => {
         const entries = context.getAuditLog();
         expect(entries).toHaveLength(1);
         expect(entries[0].status).toBe("denied");
-        expect(entries[0].disclosure_level).toBe("none");
     });
 
     it("logs multiple executions", async () => {

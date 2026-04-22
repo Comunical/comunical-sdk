@@ -1,4 +1,4 @@
-import type { PolicyRule, Participant, TrustTier } from "../Types";
+import type { Participant, TrustTier } from "../Types";
 
 const TRUST_TIER_RANK: Record<TrustTier, number> = {
     owner: 3,
@@ -20,9 +20,4 @@ export function getLowestTrustTier(participants: Record<string, Participant>): T
     }
 
     return lowest;
-}
-
-export function resolveDisclosureLevel(rule: PolicyRule, participants: Record<string, Participant>): string {
-    const lowestTier = getLowestTrustTier(participants);
-    return rule.disclosure[lowestTier] ?? "none";
 }

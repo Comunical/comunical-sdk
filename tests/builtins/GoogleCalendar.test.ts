@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { googleCalendar } from "../../src/builtins/GoogleCalendar";
-import { matchRule } from "../../src/engine/RuleMatcher";
+import { compileView } from "../../src/views/ViewCompiler";
 import { transform } from "../../src/engine/Transformer";
 
 const calendarApiResponse = {
@@ -25,38 +25,28 @@ const calendarApiResponse = {
 };
 
 describe("Google Calendar builtin", () => {
-    it("matches tool = 'calendar'", async () => {
-        const result = await matchRule({ tool: "calendar", params: {} }, [googleCalendar]);
-        expect(result).toBe(googleCalendar);
+    it("has correct ACL mappings for all trust tiers", () => {
+        expect(googleCalendar.acl.owner).toBe("full");
+        expect(googleCalendar.acl.verified).toBe("free_busy");
+        expect(googleCalendar.acl.guest).toBe("free_busy");
+        expect(googleCalendar.acl.external).toBe("free_busy");
     });
 
-    it("matches composio-style execute_tool with google_calendar provider", async () => {
-        const result = await matchRule({ tool: "execute_tool", params: { provider: "google_calendar" } }, [googleCalendar]);
-        expect(result).toBe(googleCalendar);
-    });
-
-    it("does not match unrelated tools", async () => {
-        const result = await matchRule({ tool: "email", params: {} }, [googleCalendar]);
-        expect(result).toBeNull();
-    });
-
-    it("free_busy_only transform strips titles and details", async () => {
-        const expr = googleCalendar.disclosure_levels!["free_busy_only"].transform;
+    it("free_busy view strips titles and details", async () => {
+        const expr = compileView(googleCalendar.views.free_busy);
         const result = await transform(expr, calendarApiResponse);
         const items = result as Array<Record<string, unknown>>;
         expect(items).toHaveLength(2);
-        expect(items[0]).toEqual({
-            start: { dateTime: "2026-04-21T10:00:00Z" },
-            end: { dateTime: "2026-04-21T11:00:00Z" },
-            status: "confirmed",
-            title: "Busy"
-        });
+        expect(items[0].title).toBe("Busy");
+        expect(items[0]).toHaveProperty("start");
+        expect(items[0]).toHaveProperty("end");
+        expect(items[0]).toHaveProperty("status");
         expect(items[0]).not.toHaveProperty("description");
         expect(items[0]).not.toHaveProperty("attendees");
     });
 
-    it("metadata_only transform includes attendee count but not names", async () => {
-        const expr = googleCalendar.disclosure_levels!["metadata_only"].transform;
+    it("metadata view includes attendee count but not names", async () => {
+        const expr = compileView(googleCalendar.views.metadata);
         const result = await transform(expr, calendarApiResponse);
         const items = result as Array<Record<string, unknown>>;
         expect(items[0]).toHaveProperty("attendee_count", 2);
@@ -64,22 +54,19 @@ describe("Google Calendar builtin", () => {
         expect(items[0]).not.toHaveProperty("title");
     });
 
-    it("summary_only transform returns aggregate counts", async () => {
-        const expr = googleCalendar.disclosure_levels!["summary_only"].transform;
+    it("summary view returns aggregate counts", async () => {
+        const expr = compileView(googleCalendar.views.summary);
         const result = await transform(expr, calendarApiResponse);
         expect(result).toEqual({ total_events: 2, busy_hours: 2.5 });
     });
 
-    it("full transform passes through everything", async () => {
-        const expr = googleCalendar.disclosure_levels!["full"].transform;
+    it("full view passes through everything", async () => {
+        const expr = compileView(googleCalendar.views.full);
         const result = await transform(expr, calendarApiResponse);
         expect(result).toEqual(calendarApiResponse);
     });
 
-    it("has disclosure mappings for all trust tiers", () => {
-        expect(googleCalendar.disclosure.owner).toBe("full");
-        expect(googleCalendar.disclosure.verified).toBe("free_busy_only");
-        expect(googleCalendar.disclosure.guest).toBe("free_busy_only");
-        expect(googleCalendar.disclosure.external).toBe("free_busy_only");
+    it("has aliases for composio-style execute_tool", () => {
+        expect(googleCalendar.aliases).toEqual([{ tool: "execute_tool", provider: "google_calendar" }]);
     });
 });

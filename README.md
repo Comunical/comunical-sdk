@@ -159,7 +159,37 @@ const guard = comunical.createGuard({
         calendar: {}  // owner_only by default
     },
     policies: {
-        rules: [comunical.builtins.googleCalendar]
+        rules: [
+            {
+                name: "Google Calendar",
+
+                // Which tool calls does this rule apply to?
+                // JSONata expression evaluated against { tool, params }
+                match: 'tool = "calendar"',
+
+                // For each trust tier, which disclosure level applies?
+                disclosure: {
+                    owner: "full",              // Jim sees everything
+                    verified: "free_busy_only", // internal colleagues see time slots only
+                    guest: "free_busy_only",
+                    external: "free_busy_only"  // Bill sees time slots only
+                },
+
+                // Each disclosure level defines a JSONata transform.
+                // Only fields explicitly included in the transform exist in the output.
+                // This is the security boundary — default closed.
+                disclosure_levels: {
+                    free_busy_only: {
+                        // Strips titles, attendees, descriptions — replaces with "Busy"
+                        transform: 'items.{ "start": start, "end": end, "status": status, "title": "Busy" }'
+                    },
+                    full: {
+                        // $$ is JSONata for "pass through the entire input unchanged"
+                        transform: "$$"
+                    }
+                }
+            }
+        ]
     }
 });
 ```

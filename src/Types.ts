@@ -93,6 +93,18 @@ export const ExecuteResultSchema = z.object({
 });
 export type ExecuteResult = z.infer<typeof ExecuteResultSchema>;
 
+// --- Tool execution request ---
+
+export const ToolExecutionRequestSchema = z.object({
+    name: z.string().min(1),
+    description: z.string().min(1),
+    parameters: z.unknown().optional(),
+    params: z.record(z.string(), z.unknown()).default({})
+});
+export type ToolExecutionRequest = z.infer<typeof ToolExecutionRequestSchema>;
+
 // --- Functional types (not expressible in Zod) ---
 
 export type ToolHandler<T = unknown> = (params: Record<string, unknown>) => Promise<T>;
+
+export type LlmCallback = (prompt: string) => Promise<string>;

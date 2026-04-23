@@ -7,8 +7,9 @@ export const comunical = {
 };
 
 export { createGuard } from "./Guard";
-export type { Guard } from "./Guard";
+export type { Guard, GuardOptions } from "./Guard";
 export { BoundContext } from "./Context";
+export type { ExecuteInput } from "./Context";
 export { compileView } from "./views/ViewCompiler";
 
 export type {
@@ -27,8 +28,10 @@ export type {
     RuleConfig,
     GuardConfig,
     ConversationContext,
+    ToolExecutionRequest,
     ExecuteResult,
-    ToolHandler
+    ToolHandler,
+    LlmCallback
 } from "./Types";
 
 export {
@@ -47,6 +50,7 @@ export {
     RuleConfigSchema,
     GuardConfigSchema,
     ConversationContextSchema,
+    ToolExecutionRequestSchema,
     ExecuteResultSchema
 } from "./Types";
 

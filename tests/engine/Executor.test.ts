@@ -51,14 +51,14 @@ function makeContext(overrides: Partial<ConversationContext> = {}): Conversation
 describe("Executor — executePipeline", () => {
     it("executes an open tool and returns full data", async () => {
         const handler = async () => ({ results: ["result1", "result2"] });
-        const result = await executePipeline("search", handler, {}, guardConfig, makeContext());
+        const result = await executePipeline({ name: "search", description: "Search the web", params: {} }, handler, guardConfig, makeContext());
         expect(result.status).toBe("ok");
         expect(result.data).toEqual({ results: ["result1", "result2"] });
     });
 
     it("executes an owner_only tool and applies the view transform", async () => {
         const handler = async () => calendarData;
-        const result = await executePipeline("calendar", handler, {}, guardConfig, makeContext());
+        const result = await executePipeline({ name: "calendar", description: "Access calendar events", params: {} }, handler, guardConfig, makeContext());
         expect(result.status).toBe("ok");
         expect(result.data).toEqual([
             { start: "10:00", end: "11:00", status: undefined, title: "Busy" },
@@ -74,7 +74,7 @@ describe("Executor — executePipeline", () => {
                 "alex@agent": { role: "agent", trust: "owner" }
             }
         });
-        const result = await executePipeline("calendar", handler, {}, guardConfig, ctx);
+        const result = await executePipeline({ name: "calendar", description: "Access calendar events", params: {} }, handler, guardConfig, ctx);
         expect(result.status).toBe("ok");
         expect(result.data).toEqual(calendarData);
     });
@@ -84,27 +84,27 @@ describe("Executor — executePipeline", () => {
         const ctx = makeContext({
             messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
-        const result = await executePipeline("calendar", handler, {}, guardConfig, ctx);
+        const result = await executePipeline({ name: "calendar", description: "Access calendar events", params: {} }, handler, guardConfig, ctx);
         expect(result.status).toBe("denied");
     });
 
     it("returns permission_required for explicit tool without grant", async () => {
         const handler = async () => ({});
-        const result = await executePipeline("email", handler, {}, guardConfig, makeContext());
+        const result = await executePipeline({ name: "email", description: "Access email", params: {} }, handler, guardConfig, makeContext());
         expect(result.status).toBe("permission_required");
     });
 
     it("denies when identity verification is insufficient", async () => {
         const handler = async () => calendarData;
         const ctx = makeContext({ identity_verification: "unverified" });
-        const result = await executePipeline("calendar", handler, {}, guardConfig, ctx);
+        const result = await executePipeline({ name: "calendar", description: "Access calendar events", params: {} }, handler, guardConfig, ctx);
         expect(result.status).toBe("denied");
         expect(result.reason).toBe("insufficient_identity_verification");
     });
 
     it("denies when no rule exists for a gated tool", async () => {
         const handler = async () => ({});
-        const result = await executePipeline("crm", handler, {}, guardConfig, makeContext());
+        const result = await executePipeline({ name: "crm", description: "Access CRM data", params: {} }, handler, guardConfig, makeContext());
         expect(result.status).toBe("denied");
         expect(result.reason).toContain("No rule found");
     });
@@ -118,13 +118,13 @@ describe("Executor — executePipeline", () => {
         const ctx = makeContext({
             messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
-        await executePipeline("calendar", handler, {}, guardConfig, ctx);
+        await executePipeline({ name: "calendar", description: "Access calendar events", params: {} }, handler, guardConfig, ctx);
         expect(handlerCalled).toBe(false);
     });
 
     it("denies when tool is not registered in guard config", async () => {
         const handler = async () => ({ data: "secret" });
-        const result = await executePipeline("unregistered_tool", handler, {}, guardConfig, makeContext());
+        const result = await executePipeline({ name: "unregistered_tool", description: "Unknown", params: {} }, handler, guardConfig, makeContext());
         expect(result.status).toBe("denied");
         expect(result.reason).toContain("not registered");
     });

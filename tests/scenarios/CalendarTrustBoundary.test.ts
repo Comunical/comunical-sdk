@@ -16,9 +16,9 @@
  * - Revoke access when Jim is removed from the thread
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createGuard } from "../../src/Guard";
-import type { ConversationContext } from "../../src/Types";
+import type { ConversationContext, LlmCallback } from "../../src/Types";
 
 // Jim's actual calendar — contains sensitive information
 const jimsCalendar = {
@@ -56,45 +56,53 @@ const jimsCalendar = {
     ]
 };
 
-function createScenarioGuard(calendarAccess: "owner_only" | "explicit" | "implicit" = "owner_only") {
-    return createGuard({
-        tools: {
-            calendar: { access: calendarAccess },
-            email: { access: "explicit" }
-        },
-        rules: {
-            calendar: {
-                acl: {
-                    owner: "full",
-                    verified: "free_busy",
-                    guest: "free_busy",
-                    external: "free_busy"
+/** Creates a mock LLM callback that always returns the given response */
+function mockLlm(response: string): LlmCallback {
+    return vi.fn(async () => response);
+}
+
+function createScenarioGuard(calendarAccess: "owner_only" | "explicit" | "implicit" = "owner_only", llm?: LlmCallback) {
+    return createGuard(
+        {
+            tools: {
+                calendar: { access: calendarAccess },
+                email: { access: "explicit" }
+            },
+            rules: {
+                calendar: {
+                    acl: {
+                        owner: "full",
+                        verified: "free_busy",
+                        guest: "free_busy",
+                        external: "free_busy"
+                    },
+                    views: {
+                        full: "*",
+                        free_busy: {
+                            include: ["items.start", "items.end", "items.status"],
+                            replace: { "items.title": "Busy" }
+                        }
+                    }
                 },
-                views: {
-                    full: "*",
-                    free_busy: {
-                        include: ["items.start", "items.end", "items.status"],
-                        replace: { "items.title": "Busy" }
+                email: {
+                    acl: {
+                        owner: "full",
+                        verified: "headers",
+                        guest: "deny",
+                        external: "deny"
+                    },
+                    views: {
+                        full: "*",
+                        headers: {
+                            include: ["messages.from", "messages.subject", "messages.date"]
+                        },
+                        deny: "deny"
                     }
                 }
-            },
-            email: {
-                acl: {
-                    owner: "full",
-                    verified: "headers",
-                    guest: "deny",
-                    external: "deny"
-                },
-                views: {
-                    full: "*",
-                    headers: {
-                        include: ["messages.from", "messages.subject", "messages.date"]
-                    },
-                    deny: "deny"
-                }
             }
-        }
-    });
+        },
+        llm ? { llm } : undefined
+    );
 }
 
 const calendarHandler = async () => jimsCalendar;
@@ -120,7 +128,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("ok");
         });
 
@@ -143,7 +151,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             const items = result.data as Array<Record<string, unknown>>;
 
             for (const item of items) {
@@ -182,7 +190,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
 
@@ -205,7 +213,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
     });
@@ -236,7 +244,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
     });
@@ -260,7 +268,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
 
             expect(result.status).toBe("ok");
             expect(result.data).toEqual(jimsCalendar);
@@ -269,7 +277,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
 
     describe("Step 5 — Implicit mode: Jim's intent is detected", () => {
         it("grants calendar access in implicit mode when Jim's message implies scheduling", async () => {
-            const context = createScenarioGuard("implicit").withContext({
+            const context = createScenarioGuard("implicit", mockLlm("yes")).withContext({
                 context_type: "group",
                 identity_verification: "verified",
                 participants: {
@@ -287,7 +295,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("ok");
 
             const items = result.data as Array<Record<string, unknown>>;
@@ -297,7 +305,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
         });
 
         it("denies in implicit mode when Bill's message implies intent (non-owner)", async () => {
-            const context = createScenarioGuard("implicit").withContext({
+            const context = createScenarioGuard("implicit", mockLlm("no")).withContext({
                 context_type: "group",
                 identity_verification: "verified",
                 participants: {
@@ -315,12 +323,12 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
 
         it("denies implicit mode when identity verification is only 'assumed'", async () => {
-            const context = createScenarioGuard("implicit").withContext({
+            const context = createScenarioGuard("implicit", mockLlm("yes")).withContext({
                 context_type: "group",
                 identity_verification: "assumed",
                 participants: {
@@ -337,7 +345,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
             expect(result.reason).toBe("insufficient_identity_verification");
         });
@@ -363,7 +371,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("permission_required");
         });
 
@@ -392,7 +400,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("ok");
 
             const items = result.data as Array<Record<string, unknown>>;
@@ -426,7 +434,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("permission_required");
         });
     });
@@ -451,7 +459,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
 
@@ -474,7 +482,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
 
@@ -497,7 +505,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
         });
 
@@ -520,7 +528,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("denied");
             expect(result.reason).toBe("unknown_participant");
         });
@@ -544,7 +552,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("permission_required");
         });
 
@@ -579,7 +587,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("permission_required");
         });
     });
@@ -604,7 +612,7 @@ describe("Scenario: Jim/Bill Calendar Trust Boundary", () => {
                 ]
             });
 
-            const result = await context.execute("calendar", calendarHandler, {});
+            const result = await context.execute({ name: "calendar", description: "Access calendar events for scheduling", handler: calendarHandler, params: {} });
             expect(result.status).toBe("ok");
 
             const entries = context.getAuditLog();

@@ -1,4 +1,4 @@
-import type { ToolAccess, ConversationContext, IdentityVerification } from "../Types";
+import type { ToolAccess, ConversationContext, IdentityVerification, ToolExecutionRequest, LlmCallback } from "../Types";
 import { isGrantorPresent } from "../grants/Revocation";
 import { detectExplicitGrant } from "../grants/ExplicitDetector";
 import { detectImplicitGrant } from "../grants/ImplicitDetector";
@@ -25,7 +25,13 @@ function findOwners(context: ConversationContext): string[] {
         .map(([id]) => id);
 }
 
-export function checkGrant(toolName: string, access: ToolAccess, context: ConversationContext): GrantCheckResult {
+export async function checkGrant(
+    toolName: string,
+    access: ToolAccess,
+    context: ConversationContext,
+    toolRequest?: ToolExecutionRequest,
+    llm?: LlmCallback
+): Promise<GrantCheckResult> {
     if (access === "open") {
         return { granted: true };
     }
@@ -67,7 +73,11 @@ export function checkGrant(toolName: string, access: ToolAccess, context: Conver
     }
 
     if (access === "implicit") {
-        if (detectImplicitGrant(context.messages, toolName, context.participants)) {
+        if (!toolRequest || !llm) {
+            return { granted: false, reason: "implicit access requires an LLM callback and tool metadata" };
+        }
+        const granted = await detectImplicitGrant(context.messages, toolRequest, context.participants, llm);
+        if (granted) {
             return { granted: true };
         }
         return { granted: false, reason: "no_implicit_intent_detected" };

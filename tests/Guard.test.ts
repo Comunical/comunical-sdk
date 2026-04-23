@@ -52,6 +52,27 @@ describe("createGuard", () => {
         ).toThrow(InvalidConfigError);
     });
 
+    it("throws InvalidConfigError when implicit tool has no llm", () => {
+        expect(() =>
+            createGuard({
+                tools: { memory: { access: "implicit" } },
+                rules: {}
+            })
+        ).toThrow(InvalidConfigError);
+    });
+
+    it("does not throw when implicit tool has an llm callback", () => {
+        expect(() =>
+            createGuard(
+                {
+                    tools: { memory: { access: "implicit" } },
+                    rules: {}
+                },
+                { llm: async () => "yes" }
+            )
+        ).not.toThrow();
+    });
+
     it("returns a guard with withContext method", () => {
         const guard = createGuard({
             tools: { calendar: {} },

@@ -1,4 +1,4 @@
-import type { ExecuteResult, ToolHandler, GuardConfig, ConversationContext, ToolAccess, RuleConfig } from "../Types";
+import type { ExecuteResult, ToolHandler, GuardConfig, ConversationContext, ToolAccess, RuleConfig, ToolExecutionRequest, LlmCallback } from "../Types";
 import type { AuditEntry } from "../audit/Logger";
 import { checkGrant } from "./GrantChecker";
 import { getLowestTrustTier } from "./DisclosureResolver";
@@ -45,12 +45,13 @@ function findRule(toolName: string, params: Record<string, unknown>, guardConfig
 }
 
 export async function executePipeline(
-    toolName: string,
+    request: ToolExecutionRequest,
     handler: ToolHandler,
-    params: Record<string, unknown>,
     guardConfig: GuardConfig,
-    context: ConversationContext
+    context: ConversationContext,
+    llm?: LlmCallback
 ): Promise<PipelineResult> {
+    const toolName = request.name;
     const participantCount = Object.keys(context.participants).length;
 
     if (!(toolName in guardConfig.tools)) {
@@ -64,7 +65,7 @@ export async function executePipeline(
 
     const access = resolveToolAccess(toolName, guardConfig);
 
-    const grantResult = checkGrant(toolName, access, context);
+    const grantResult = await checkGrant(toolName, access, context, request, llm);
     if (!grantResult.granted) {
         const status = grantResult.reason === "permission_required" ? ("permission_required" as const) : ("denied" as const);
         return {
@@ -74,10 +75,10 @@ export async function executePipeline(
         };
     }
 
-    const rule = findRule(toolName, params, guardConfig);
+    const rule = findRule(toolName, request.params, guardConfig);
     if (!rule) {
         if (access === "open") {
-            const rawData = await handler(params);
+            const rawData = await handler(request.params);
             return {
                 status: "ok",
                 data: rawData,
@@ -114,7 +115,7 @@ export async function executePipeline(
         };
     }
 
-    const rawData = await handler(params);
+    const rawData = await handler(request.params);
     const transformExpression = compileView(viewDef);
     const transformedData = await transform(transformExpression, rawData);
 

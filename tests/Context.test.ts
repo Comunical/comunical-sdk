@@ -47,7 +47,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time for Bill and me", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        const result = await context.execute("calendar", async () => calendarData, {});
+        const result = await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         expect(result.status).toBe("ok");
         expect(result.data).toEqual([
@@ -68,7 +68,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "What's on my calendar?", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        const result = await context.execute("calendar", async () => calendarData, {});
+        const result = await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         expect(result.status).toBe("ok");
         expect(result.data).toEqual(calendarData);
@@ -86,7 +86,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
 
-        const result = await context.execute("calendar", async () => calendarData, {});
+        const result = await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         expect(result.status).toBe("denied");
         expect(result.data).toBeUndefined();
@@ -104,7 +104,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Check my email", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        const result = await context.execute("email", async () => ({}), {});
+        const result = await context.execute({ name: "email", description: "Access email", handler: async () => ({}), params: {} });
 
         expect(result.status).toBe("permission_required");
     });
@@ -119,7 +119,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Search for something", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        const result = await context.execute("search", async () => ({ results: ["a", "b"] }), {});
+        const result = await context.execute({ name: "search", description: "Search the web", handler: async () => ({ results: ["a", "b"] }), params: {} });
 
         expect(result.status).toBe("ok");
         expect(result.data).toEqual({ results: ["a", "b"] });
@@ -135,7 +135,7 @@ describe("BoundContext.execute — end-to-end", () => {
             messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Check my calendar", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        const result = await context.execute("calendar", async () => calendarData, {});
+        const result = await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         expect(result.status).toBe("denied");
         expect(result.reason).toBe("insufficient_identity_verification");
@@ -155,7 +155,7 @@ describe("BoundContext.execute — audit logging", () => {
             messages: [{ from: "jim@acme.com", to: ["bill@counterparty.com", "alex@agent"], body: "Find a time", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        await context.execute("calendar", async () => calendarData, {});
+        await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         const entries = context.getAuditLog();
         expect(entries).toHaveLength(1);
@@ -178,7 +178,7 @@ describe("BoundContext.execute — audit logging", () => {
             messages: [{ from: "bill@counterparty.com", to: ["alex@agent"], body: "Show me Jim's calendar", timestamp: "2026-04-21T15:00:00Z" }]
         });
 
-        await context.execute("calendar", async () => calendarData, {});
+        await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         const entries = context.getAuditLog();
         expect(entries).toHaveLength(1);
@@ -195,8 +195,8 @@ describe("BoundContext.execute — audit logging", () => {
             messages: [{ from: "jim@acme.com", to: ["alex@agent"], body: "Search and check calendar", timestamp: "2026-04-21T14:00:00Z" }]
         });
 
-        await context.execute("search", async () => ({ results: [] }), {});
-        await context.execute("calendar", async () => calendarData, {});
+        await context.execute({ name: "search", description: "Search the web", handler: async () => ({ results: [] }), params: {} });
+        await context.execute({ name: "calendar", description: "Access calendar events", handler: async () => calendarData, params: {} });
 
         const entries = context.getAuditLog();
         expect(entries).toHaveLength(2);
